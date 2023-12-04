@@ -2,7 +2,8 @@
 import { ref, onMounted } from 'vue'
 import Loading from 'vue-loading-overlay'
 import api from '@/plugins/axios'
-
+import { useRouter } from 'vue-router'
+const router = useRouter()
 const isLoading = ref(false)
 import useGenreStore from '@/stores/genre'
 
@@ -14,6 +15,7 @@ onMounted(async () => {
 })
 const tvs = ref([])
 const listTvs = async (genreId) => {
+  genreStore.setCurrentGenreId(genreId)
   isLoading.value = true
   const response = await api.get('discover/tv', {
     params: {
@@ -24,7 +26,11 @@ const listTvs = async (genreId) => {
   tvs.value = response.data.results
   isLoading.value = false
 }
-// const formatDate = (date) => new Date(date).toLocaleDateString('pt-BR')
+
+function openTv(tvId) {
+  router.push({ name: 'TvDetails', params: { tvId } })
+}
+
 </script>
 
 <template>
@@ -35,6 +41,7 @@ const listTvs = async (genreId) => {
       :key="genre.id"
       @click="listTvs(genre.id)"
       class="genre-item"
+      :class="{ active: genre.id === genreStore.currentGenreId }"
     >
       {{ genre.name }}
     </li>
@@ -42,12 +49,19 @@ const listTvs = async (genreId) => {
   <loading v-model:active="isLoading" is-full-page />
   <div class="movie-list">
     <div v-for="tv in tvs" :key="tv.id" class="movie-card">
-      <img :src="`https://image.tmdb.org/t/p/w500${tv.poster_path}`" :alt="tv.name" />
-      <div class="movie-details">
+      <img
+        :src="`https://image.tmdb.org/t/p/w500${tv.poster_path}`"
+        :alt="tv.name"
+        @click="openTv(tv.id)"
+      />      <div class="movie-details">
         <p class="movie-title">{{ tv.name }}</p>
-        <!-- <p class="movie-release-date">{{ formatDate(tv.release_date) }}</p> -->
         <p class="movie-genres">
-          <span v-for="genre_id in tv.genre_ids" :key="genre_id" @click="listTvs(genre_id)">
+          <span
+            v-for="genre_id in tv.genre_ids"
+            :key="genre_id"
+            @click="listTvs(genre_id)"
+            :class="{ active: genre_id === genreStore.currentGenreId }"
+          >
             {{ genreStore.getGenreName(genre_id) }}
           </span>
         </p>
@@ -90,6 +104,7 @@ const listTvs = async (genreId) => {
   border-radius: 0.5rem;
   overflow: hidden;
   box-shadow: 0 0 0.5rem #000;
+  cursor: pointer;
 }
 
 .movie-card img {
@@ -131,5 +146,16 @@ const listTvs = async (genreId) => {
   cursor: pointer;
   background-color: #455a08;
   box-shadow: 0 0 0.5rem #748708;
+}
+
+.active {
+  background-color: #67b086;
+  font-weight: bolder;
+}
+
+.movie-genres span.active {
+  background-color: #abc322;
+  color: #000;
+  font-weight: bolder;
 }
 </style>
